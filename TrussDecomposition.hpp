@@ -1,8 +1,6 @@
 /**
- * @file DenseTrussSearch.hpp
+ * @file TrussDecomposition.hpp
  * @author Tianyang Xu
- * @brief This file includes utilities to perform Dense Truss Search algorithms
- * in the paper.
  * @version 0.1
  * @date 2021-04-03
  *
@@ -18,48 +16,45 @@
 #include <utility>
 
 /**
- * @brief This class implements dense truss search algorithms mentioned in
- * paper.
+ * @brief This class includes computation of trussness of nodes, edges and
+ * truss-indices based on truss decomposition. This class is relied on a series
+ * of other classes, but you do not need to initialize this before using them.
+ * These classes, such as `DenshTrussSearchTopDown`, have done the job for you.
  *
  */
-class DenseTrussSearch {
+class TrussDecomposition {
   public:
-    DenseTrussSearch() = delete;
+    TrussDecomposition() = delete;
     /**
-     * @brief Construct a new Dense Truss Search object
+     * @brief Construct a new Truss Decomposition object. Computation starts the
+     * moment a `TrussDecomposition` is initialized.
      *
      * @param graph
-     * @param keywords a vector that satisfies keywords[keyword] = nodes
      */
-    DenseTrussSearch(PUndirNet graph,
-                     const std::vector<std::vector<int>> &keywords)
-        : graph(graph), keywords(keywords) {
+    explicit TrussDecomposition(PUndirNet graph) : graph(graph) {
         initSupport();
         initTrussness();
         initTrussSubgraph();
     }
-    /**
-     * @brief Perform DenseTrussSearch-TopDown (alg. 3).
-     *
-     * @return TCnCom a dense truss. Empty if not exists.
-     */
-    TCnCom topdown();
-    /**
-     * @brief Perform BuildKTIndex (alg. 4).
-     *
-     * @return Returns a tuple. The first is the max truss numbers of keywords,
-     * the second is like index[keyword number][truss number] = the IDs of
-     * connected components, and the last stores the nodes of the CCs mentioned
-     * above (truss number -> CC ID -> nodes)
-     */
-    std::tuple<std::map<int, int>,
-               std::map<int, std::map<int, std::vector<int>>>,
-               std::vector<std::vector<std::vector<int>>>>
-    buildKTIndex();
+
+    // A series of help functions
+    // I hope we can still enjoy the performance of references and not allow
+    // others to change the fields from outside the class, so this is what I am
+    // going to do...
+    int getMaxTrussness() const { return maxTrussness; }
+    const std::map<EId, int> &getEdgeSupport() const { return edgeSupport; }
+    const std::set<std::pair<int, EId>> &getSortedEdgeSupport() const {
+        return sortedEdgeSupport;
+    }
+    const std::map<VId, int> &getNodeTrussness() const { return nodeTrussness; }
+    const std::map<EId, int> &getEdgeTrussness() const { return edgeTrussness; }
+    const std::vector<PUndirNet> &getTrussSubgraph() const {
+        return trussSubgraph;
+    }
+    const std::vector<TCnComV> &getTrussCC() const { return trussCC; }
 
   private:
     const PUndirNet graph;
-    const std::vector<std::vector<int>> keywords;
     int maxTrussness = 0;
     /// <Edge ID, edge support>
     std::map<EId, int> edgeSupport;
