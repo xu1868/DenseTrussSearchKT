@@ -1,5 +1,7 @@
 #include "Utility.hpp"
 
+using namespace std;
+
 int computeSupport(const PUndirNet &net, const PUndirNet::TObj::TEdgeI &edge) {
     int support = 0;
 

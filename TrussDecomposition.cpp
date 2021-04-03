@@ -1,4 +1,5 @@
 #include "TrussDecomposition.hpp"
+#include "Utility.hpp"
 #include <algorithm>
 
 using namespace std;

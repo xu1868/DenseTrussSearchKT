@@ -36,7 +36,8 @@ inline std::pair<VId, VId> minMaxDegVertices(const PUndirNet &net, VId v1,
                                              VId v2) {
     int deg1 = net->GetNI(v1).GetDeg();
     int deg2 = net->GetNI(v2).GetDeg();
-    return std::minmax_element(deg1, deg2);
+    return (deg1 < deg2) ? std::make_pair(deg1, deg2)
+                         : std::make_pair(deg2, deg1);
 }
 
 /**
@@ -56,3 +57,8 @@ int computeSupport(const PUndirNet &net, const PUndirNet::TObj::TEdgeI &edge);
  * @return FILE*
  */
 FILE *openFile(const char *fileName, const char *mode);
+
+inline std::pair<int, int> minmax_element(int ele1, int ele2) {
+    return ele1 < ele2 ? std::make_pair(ele1, ele2)
+                       : std::make_pair(ele2, ele1);
+}

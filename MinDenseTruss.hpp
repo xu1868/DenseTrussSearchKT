@@ -9,6 +9,7 @@
  */
 
 #pragma once
+
 #include "TrussDecomposition.hpp"
 #include <Snap.h>
 #include <vector>
@@ -47,9 +48,7 @@ class MinDenseTruss {
      * implementation.
      */
     MinDenseTruss(PUndirNet graph, TCnCom truss,
-                  const std::vector<std::vector<int>> &keywords, int trussness)
-        : graph(graph), truss(truss), keywords(keywords), trussness(trussness) {
-    }
+                  const std::vector<std::vector<int>> &keywords, int trussness);
 
     /**
      * @brief An implementation of alg. 6.
@@ -63,6 +62,9 @@ class MinDenseTruss {
     PUndirNet graph;
     TCnCom truss;
     const std::vector<std::vector<int>> &keywords;
+    /// In order to cater to BanksAlgorithm which asks for vector<TIntV>.
+    /// Containing keywords.
+    std::vector<TIntV> QInComV;
     int trussness;
     /// Auxiliary variable for `selectNodesToDel`
     int deleteSize = 1;
@@ -71,6 +73,11 @@ class MinDenseTruss {
     /// Early-stop threshold
     /// Number made by guessing
     int earlyStopThreshold = truss.Len() / 5;
+    /// Steiner tree add threshold
+    /// Number made by guessing
+    int steinerTreeThreshold =
+        std::min((int)keywords.size() * 3, truss.Len() - 1);
+    const int BASIC_STEINER_TREE = 0;
 
     /**
      * @brief A helper function for alg. 6.
@@ -87,4 +94,10 @@ class MinDenseTruss {
      * @return TIntV
      */
     TIntV selectNodesToDel(const TIntV &gdenDiffVis, int setting);
+    /**
+     * @brief When a user turns to optimization III this is what is given
+     *
+     * @return TIntV result
+     */
+    TIntV localExploration();
 };

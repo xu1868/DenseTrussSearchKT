@@ -13,18 +13,18 @@
 #define LABEL_TREE 0
 #define LABEL_PATH 1
 
-//para for tree
+// para for tree
 #define PARA_MAX 1
 #define PARA_VTOUR 2
 #define PARA_BIDIRECT 4
 
-//para for tree inefficient
+// para for tree inefficient
 #define PARA_SUBVTOUR 8
 #define PARA_PATH 16
 #define PARA_VPATH 32
 #define PARA_TREE 128
 
-//para for path
+// para for path
 #define PARA_OPATH 256
 #define PARA_OPATH_MAX 512
 #define PARA_OPATH_VPATH 1024
@@ -41,420 +41,431 @@ const int MAXHEAP = 1500000000;
 using namespace std;
 
 class Word {
-public:
-	string st;
-	vector<int> v_node;
-	int pos;
-	int tlen;
-public:
-	Word( string st );
+  public:
+    string st;
+    vector<int> v_node;
+    int pos;
+    int tlen;
+
+  public:
+    Word(string st);
 };
 
 int compare_word(const void *w1, const void *w2);
 int compare_word_freq(const void *w1, const void *w2);
 
 class Application {
-private:
-	static void add_st( char *st, int id, vector<Word*> &v_word, map<string, Word*> &m_word );
-	static void save_word_ind_bin( Word** l_word, FILE* f_word_ind, int &now_pos, int s, int t );
-	static void union_node_set( vector<int> &v_rst, vector<int> &v_node );
-	static void find_word_node( string path, string w, vector<int> &v_node );
+  private:
+    static void add_st(char *st, int id, vector<Word *> &v_word,
+                       map<string, Word *> &m_word);
+    static void save_word_ind_bin(Word **l_word, FILE *f_word_ind, int &now_pos,
+                                  int s, int t);
+    static void union_node_set(vector<int> &v_rst, vector<int> &v_node);
+    static void find_word_node(string path, string w, vector<int> &v_node);
 
-public:
-	static void create_node_index( string path );
-	static void create_edge_index( string path );
-	static void create_word_index( string path );
+  public:
+    static void create_node_index(string path);
+    static void create_edge_index(string path);
+    static void create_word_index(string path);
 
-	static int get_n_node( string path );
-	static int get_n_edge( string path );
-	static void find_term_node( string path, string term, vector<int> &v_node ); //Lu Qin
-	static string find_node_st( string path, int id );
+    static int get_n_node(string path);
+    static int get_n_edge(string path);
+    static void find_term_node(string path, string term,
+                               vector<int> &v_node); // Lu Qin
+    static string find_node_st(string path, int id);
 };
 
 class S {
-public:
-	static int *n;
-	static vector<int> *v;
+  public:
+    static int *n;
+    static vector<int> *v;
 
-	static int *ns;
-	static vector<int> *vs;
+    static int *ns;
+    static vector<int> *vs;
 
-public:
-	static void init();
-	static void clear();
+  public:
+    static void init();
+    static void clear();
 };
 
-class PEntry{
-public:
-	int a, b, set;
-	int idx;
-	int info; //0:not used, 1:used
-	int cost;
+class PEntry {
+  public:
+    int a, b, set;
+    int idx;
+    int info; // 0:not used, 1:used
+    int cost;
 
-public:
-	PEntry();
+  public:
+    PEntry();
 };
 
 class KeyInfo {
-public:
-	string key;
-	int n_node;
-	vector<int> v_node;
+  public:
+    string key;
+    int n_node;
+    vector<int> v_node;
 
-public:
-	KeyInfo(string key);
+  public:
+    KeyInfo(string key);
 };
 
 class Node {
-public:
-	int len;
-	int *adj;
-	int *dis;
+  public:
+    int len;
+    int *adj;
+    int *dis;
 
-public:
-	Node();
+  public:
+    Node();
 };
 
 class Graph {
-private:
-	static const int max_node = 30000000;
+  private:
+    static const int max_node = 30000000;
 
-public:
-	string path;
-	int n, m;
-	int *adj;		//of size m
-	int *dis;		//of size m
-	Node *nodes;	//of size n
+  public:
+    string path;
+    int n, m;
+    int *adj;    // of size m
+    int *dis;    // of size m
+    Node *nodes; // of size n
 
-public:
-	Graph();
-	~Graph();
+  public:
+    Graph();
+    ~Graph();
 
-public:
-	void print();
-	void trans_graph(PUndirNet& cnet);
+  public:
+    void print();
+    void trans_graph(PUndirNet &cnet);
 };
 
 class DisOracle {
-public:
-	Graph *g;
-	int n_key;
+  public:
+    Graph *g;
+    int n_key;
 
-	int n;
-	int *timestamp;
-	int nowtime;
+    int n;
+    int *timestamp;
+    int nowtime;
 
-	int *visit_now;
-	int n_now;
+    int *visit_now;
+    int n_now;
 
-	int *src_now;
-	int *src_nxt;
+    int *src_now;
+    int *src_nxt;
 
-	int *visit_nxt;
-	int n_nxt;
+    int *visit_nxt;
+    int n_nxt;
 
-	int *seen;
+    int *seen;
 
-	int **dis;
-	int **dis_key;
+    int **dis;
+    int **dis_key;
 
-	int *key_set;
+    int *key_set;
 
-	bool empty;
-	int nowd;
+    bool empty;
+    int nowd;
 
-	bool can_key_dis;
+    bool can_key_dis;
 
-public:
-	DisOracle(Graph *g, vector<KeyInfo*> &v_key, int *key_set);
-	~DisOracle();
-	int get_dis( int i_key, int u );
-	int get_dis_key( int i_key, int key );
-	void bfs_one_round();
-	void disable_key_dis();
+  public:
+    DisOracle(Graph *g, vector<KeyInfo *> &v_key, int *key_set);
+    ~DisOracle();
+    int get_dis(int i_key, int u);
+    int get_dis_key(int i_key, int key);
+    void bfs_one_round();
+    void disable_key_dis();
 
-	bool get_path( int i_key, int u, vector<int> &v_path );
+    bool get_path(int i_key, int u, vector<int> &v_path);
 };
 
 class PEntryHeap {
-public:
-	static const int n_block_pentry = 1000000;
-public:
-	PEntryHeap( DisOracle *d );
-	~PEntryHeap();
+  public:
+    static const int n_block_pentry = 1000000;
 
-private:
-	vector<PEntry*> v_block;
-	vector<int> v_pos;
+  public:
+    PEntryHeap(DisOracle *d);
+    ~PEntryHeap();
 
-private:
-	PEntry* get_entry();
+  private:
+    vector<PEntry *> v_block;
+    vector<int> v_pos;
 
-private:
-	int l;
-	PEntry**** tab; //a, b, set
-	PEntry*** tab_a; //a, set
+  private:
+    PEntry *get_entry();
 
-public:
-	int get_dis( int a, int b, int set ); //from a to set to b
-	int get_dis( int a, int set ); //from a to set
+  private:
+    int l;
+    PEntry ****tab;  // a, b, set
+    PEntry ***tab_a; // a, set
 
-private:
-	vector<PEntry*> heap;
-	int tot;
+  public:
+    int get_dis(int a, int b, int set); // from a to set to b
+    int get_dis(int a, int set);        // from a to set
 
-private:
-	void up( int p );
-	void down( int p );
+  private:
+    vector<PEntry *> heap;
+    int tot;
 
-	void enheap( int a, int b, int set, int cost );
-	void update( PEntry *e );
-	PEntry* deheap();
-	bool empty();
+  private:
+    void up(int p);
+    void down(int p);
 
-private:
-	void update( int a, int b, int set, int cost );
-public:
-	void init( DisOracle *d );
+    void enheap(int a, int b, int set, int cost);
+    void update(PEntry *e);
+    PEntry *deheap();
+    bool empty();
+
+  private:
+    void update(int a, int b, int set, int cost);
+
+  public:
+    void init(DisOracle *d);
 };
 
 class Entry {
-public:
-	int set; 	//set of keywords
-	int p; 		//node id
-	int idx; 	//index in heap
-	int cost;	//cost in heap
-	int val;	//the current cost
-	int info; 	//first three bits: label; fourth bit: used
-	Entry* next;
+  public:
+    int set;  // set of keywords
+    int p;    // node id
+    int idx;  // index in heap
+    int cost; // cost in heap
+    int val;  // the current cost
+    int info; // first three bits: label; fourth bit: used
+    Entry *next;
 
-public:
-	Entry();
+  public:
+    Entry();
 };
 
 class EntryHeap {
-private:
-	static const int n_block_entry = 1000000;
-	static const int init_hash_len = 1111111;
+  private:
+    static const int n_block_entry = 1000000;
+    static const int init_hash_len = 1111111;
 
-private:
-	vector<Entry*> v_block;
-	vector<int> v_pos;
+  private:
+    vector<Entry *> v_block;
+    vector<int> v_pos;
 
-public:
-	EntryHeap();
-	~EntryHeap();
+  public:
+    EntryHeap();
+    ~EntryHeap();
 
-private:
-	Entry* get_entry();
+  private:
+    Entry *get_entry();
 
-private:
-	Entry **hash;
-	int len_hash;
-	int n_hash;
+  private:
+    Entry **hash;
+    int len_hash;
+    int n_hash;
 
-private:
-	int h( Entry *e );
-	int h( int p, int set, int label );
+  private:
+    int h(Entry *e);
+    int h(int p, int set, int label);
 
-public:
-	void add( Entry *e );
-	Entry *find( int p, int set, int label );
-	int len();
+  public:
+    void add(Entry *e);
+    Entry *find(int p, int set, int label);
+    int len();
 
-private:
-	vector<Entry*> heap;
-	int tot;
+  private:
+    vector<Entry *> heap;
+    int tot;
 
-	void up( int p );
-	void down( int p );
+    void up(int p);
+    void down(int p);
 
-public:
-	Entry* enheap( int p, int set, int label, int val, int cost );
-	void update( Entry *e );
-	Entry *deheap();
-	bool empty();
+  public:
+    Entry *enheap(int p, int set, int label, int val, int cost);
+    void update(Entry *e);
+    Entry *deheap();
+    bool empty();
 };
 
 class ResultNode {
-public:
-	int id;
-	vector<ResultNode*> con;
-	bool used;
-public:
-	ResultNode( int id );
+  public:
+    int id;
+    vector<ResultNode *> con;
+    bool used;
+
+  public:
+    ResultNode(int id);
 };
 
 class ResultTree {
-public:
-	bool is_tree;
-	string path;
-	vector<ResultNode*> v_node;
-	map<int, ResultNode*> m_node;
-	int n_edge;
+  public:
+    bool is_tree;
+    string path;
+    vector<ResultNode *> v_node;
+    map<int, ResultNode *> m_node;
+    int n_edge;
 
-public:
-	ResultTree(string path);
-	~ResultTree();
-	ResultNode* get_node( int id );
-	void add_edge( int id1, int id2 );
+  public:
+    ResultTree(string path);
+    ~ResultTree();
+    ResultNode *get_node(int id);
+    void add_edge(int id1, int id2);
 };
 
-class Algorithm{
-private:
-	Graph *g;
-	string query;
-	vector<KeyInfo*> v_key;
-	//vector<Dijkstra*> v_dij;
-	//vector<BFS*> v_dij;
-	DisOracle *d;
-	int *key_set;
-	int n_key;
-	int type;
-	ResultTree *rt;
+class Algorithm {
+  private:
+    Graph *g;
+    string query;
+    vector<KeyInfo *> v_key;
+    // vector<Dijkstra*> v_dij;
+    // vector<BFS*> v_dij;
+    DisOracle *d;
+    int *key_set;
+    int n_key;
+    int type;
+    ResultTree *rt;
 
-private:
-	EntryHeap *heap;
-	PEntryHeap *pheap;
+  private:
+    EntryHeap *heap;
+    PEntryHeap *pheap;
 
-private:
-	vector<Entry*>* v_entry;
+  private:
+    vector<Entry *> *v_entry;
 
-private:
-	int best;
-	int pre_best;
-	int pre_min_cost;
-	bool show_progress_result;
+  private:
+    int best;
+    int pre_best;
+    int pre_min_cost;
+    bool show_progress_result;
 
-public:
-	int min_cost;
-	long tm_start;
-	double processing_time;
-	double total_memory;
-	int heap_len;
-	bool succ;
-	vector<double> diagram_time;
-	vector<double> diagram_qlty;
-	vector<double> diagram_memy;
-	vector<int> diagram_best;
-	vector<int> diagram_minc;
-	string fail_reason;
+  public:
+    int min_cost;
+    long tm_start;
+    double processing_time;
+    double total_memory;
+    int heap_len;
+    bool succ;
+    vector<double> diagram_time;
+    vector<double> diagram_qlty;
+    vector<double> diagram_memy;
+    vector<int> diagram_best;
+    vector<int> diagram_minc;
+    string fail_reason;
 
+  public:
+    static void parse_query(std::vector<TIntV> &QInComV, Graph *g,
+                            vector<KeyInfo *> &v_key, int *&key_set);
+    static void parse_query(std::vector<TIntV> &QInComV, Graph *g,
+                            vector<KeyInfo *> &v_key, DisOracle *&d,
+                            int *&key_set);
 
-public:
-	static void parse_query( std::vector<TIntV>& QInComV, Graph *g, vector<KeyInfo*> &v_key, int *&key_set );
-	static void parse_query( std::vector<TIntV>& QInComV, Graph *g, vector<KeyInfo*> &v_key, DisOracle* &d, int *&key_set );
+  private:
+    void update(int u, int set, int val);
+    void update_path(int u, int set, int val);
 
-private:
-	void update( int u, int set, int val );
-	void update_path( int u, int set, int val );
+    int get_lb(int u, int set, int val);
+    int get_lb_path(int u, int set, int val);
 
-	int get_lb( int u, int set, int val );
-	int get_lb_path( int u, int set, int val );
+  private:
+    void create_result_tree(Entry *e);
+    void create_result_path_tree(Entry *e);
 
-private:
-	void create_result_tree( Entry *e );
-	void create_result_path_tree( Entry *e );
+  public:
+    static void print_result(ResultTree *rt);
+    static void print_result(ResultTree *rt, string st, ResultNode *pre,
+                             ResultNode *now);
 
-public:
-	static void print_result( ResultTree *rt );
-	static void print_result( ResultTree *rt, string st, ResultNode *pre, ResultNode *now );
+  public:
+    void run(PUndirNet &net, std::vector<TIntV> &QInComV, int type,
+             bool show_progress_result = false);
 
-public:
-	void run( PUndirNet& net, std::vector<TIntV>& QInComV, int type, bool show_progress_result = false );
-
-public:
-	void print_progress( int cnt, int cnt_tree, int cnt_path );
-	void record_progress();
-	void print_result( Entry* e );
-	void print_progress_result( Entry* e );
-	void print_diagram();
-	double get_memory();
+  public:
+    void print_progress(int cnt, int cnt_tree, int cnt_path);
+    void record_progress();
+    void print_result(Entry *e);
+    void print_progress_result(Entry *e);
+    void print_diagram();
+    double get_memory();
 };
-
 
 class BanksNode {
-public:
-	int dis;
-	double val;
-	int id;
-	BanksNode *pre;
-	int idx;
+  public:
+    int dis;
+    double val;
+    int id;
+    BanksNode *pre;
+    int idx;
 };
 
 class BanksKeyIter {
-public:
-	Graph *g;
-	int key_id;
-	KeyInfo *key;
-	BanksNode *nodes;
-	BanksNode **heap;
-	BanksNode ***key_dis;
-	int tot;
+  public:
+    Graph *g;
+    int key_id;
+    KeyInfo *key;
+    BanksNode *nodes;
+    BanksNode **heap;
+    BanksNode ***key_dis;
+    int tot;
 
-public:
-	void init();
-	void clear();
-	void up( int p );
-	void down( int p );
-	bool empty();
-	double get_max_val();
-	void enheap( BanksNode *bn );
-	void update( BanksNode *bn );
-	BanksNode* deheap();
-	int expand();
-	void update_dis( BanksNode *bn );
+  public:
+    void init();
+    void clear();
+    void up(int p);
+    void down(int p);
+    bool empty();
+    double get_max_val();
+    void enheap(BanksNode *bn);
+    void update(BanksNode *bn);
+    BanksNode *deheap();
+    int expand();
+    void update_dis(BanksNode *bn);
 };
 
 class BanksAlgorithm {
-public:
-	Graph *g;
-	string query;
-	vector<KeyInfo*> v_key;
-	int n_key;
-	BanksKeyIter *key_iter;
-	int *key_set;
+  public:
+    Graph *g;
+    string query;
+    vector<KeyInfo *> v_key;
+    int n_key;
+    BanksKeyIter *key_iter;
+    int *key_set;
 
-	BanksNode ***key_dis;
+    BanksNode ***key_dis;
 
-	int best_cost;
-	int best_root;
-	double total_memory;
-	double process_time;
+    int best_cost;
+    int best_root;
+    double total_memory;
+    double process_time;
 
-public:
-	void update_best(int u);
-	void output(int u);
-	bool is_complete(int u);
-	int find_best();
-	void run(PUndirNet& net, std::vector<TIntV>& QInComV, int type, bool show_progress_result);
+  public:
+    void update_best(int u);
+    void output(int u);
+    bool is_complete(int u);
+    int find_best();
+    void run(PUndirNet &net, std::vector<TIntV> &QInComV, int type,
+             bool show_progress_result);
 };
 
-
 class Exp {
-public:
-	static const string in_path;
-	static const string out_path;
+  public:
+    static const string in_path;
+    static const string out_path;
 
-	static const int n_knum;
-	static const string v_knum[];
-	static const string default_knum;
+    static const int n_knum;
+    static const string v_knum[];
+    static const string default_knum;
 
-	static const int n_dataset;
-	static const string v_dataset[];
+    static const int n_dataset;
+    static const string v_dataset[];
 
-	static const int n_alg;
-	static const string v_alg[];
+    static const int n_alg;
+    static const string v_alg[];
 
-	static const int n_kwf;
-	static const string v_kwf[];
-	static const string default_kwf;
+    static const int n_kwf;
+    static const string v_kwf[];
+    static const string default_kwf;
 
-	static const double max_apr;
+    static const double max_apr;
 
-public:
-	static void draw_diagram(string dataset, string alg, string knum, string kwf);
-	static void exp_all();
+  public:
+    static void draw_diagram(string dataset, string alg, string knum,
+                             string kwf);
+    static void exp_all();
 };
 
 #endif
