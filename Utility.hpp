@@ -36,8 +36,7 @@ inline std::pair<VId, VId> minMaxDegVertices(const PUndirNet &net, VId v1,
                                              VId v2) {
     int deg1 = net->GetNI(v1).GetDeg();
     int deg2 = net->GetNI(v2).GetDeg();
-    return (deg1 < deg2) ? std::make_pair(deg1, deg2)
-                         : std::make_pair(deg2, deg1);
+    return (deg1 < deg2) ? std::make_pair(v1, v2) : std::make_pair(v2, v1);
 }
 
 /**

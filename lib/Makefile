@@ -8,7 +8,7 @@ OBJECTS = Utility.o LinearHeap.o local_search.o mynet.o
 all: $(OBJECTS)
 
 $(OBJECTS): %.o : %.cpp
-	$(CC) -c $(CXXFLAGS) $(INC_PARAMS) -o $@ $< $(LIBS) 
+	$(CC) -c $(CXXFLAGS) $(INC_PARAMS) -o $@ $<
 
 clean:
 	rm -f *.o main

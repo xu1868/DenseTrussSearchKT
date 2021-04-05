@@ -42,13 +42,15 @@ class MinDenseTruss {
      *
      * @param truss
      * @param keywords a keyword vector that satisfies keywords[keyword number]
-     * = a vector of node numbers
+     * = a vector of node numbers. You are **REQUIRED** to **SORT** your
+     * keywords in order to work properly!!!
      * @param trussness The trussness of the given parameter `truss`. You are
      * required to give it as to accelerate the calculation and simplify the
      * implementation.
      */
     MinDenseTruss(PUndirNet graph, TCnCom truss,
-                  const std::vector<std::vector<int>> &keywords, int trussness);
+                  const std::vector<std::vector<int>> &keywords, int trussness,
+                  const std::map<EId, int> &edgeTrussness);
 
     /**
      * @brief An implementation of alg. 6.
@@ -56,12 +58,13 @@ class MinDenseTruss {
      * @param setting optimizations that apply.
      * @return TIntV vector of nodes in the minimal dense truss.
      */
-    TIntV findMinDenseTruss(int setting);
+    TIntV findMinDenseTruss(int setting = 0);
 
   private:
     PUndirNet graph;
     TCnCom truss;
     const std::vector<std::vector<int>> &keywords;
+    const std::map<EId, int> &edgeTrussness;
     /// In order to cater to BanksAlgorithm which asks for vector<TIntV>.
     /// Containing keywords.
     std::vector<TIntV> QInComV;

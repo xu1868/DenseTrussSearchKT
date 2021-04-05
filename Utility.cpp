@@ -5,7 +5,11 @@ using namespace std;
 int computeSupport(const PUndirNet &net, const PUndirNet::TObj::TEdgeI &edge) {
     int support = 0;
 
-    auto [u, v] = minMaxDegVertices(net, edge.GetDstNId(), edge.GetSrcNId());
+    int u = edge.GetSrcNId();
+    int v = edge.GetDstNId();
+    if (net->GetNI(u).GetDeg() > net->GetNI(v).GetDeg()) {
+        swap(u, v);
+    }
 
     for (int i = 0; i < net->GetNI(u).GetDeg(); ++i) {
         VId w = net->GetNI(u).GetNbrNId(i);

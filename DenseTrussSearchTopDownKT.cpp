@@ -20,14 +20,24 @@ void DenseTrussSearchTopDownKT::topdownKT() {
 
     vector<int> lastIntersection;
     int k = 0;
-    while (kMax > kMin) {
+    int lastK = 0;
+    int finalResult = 0;
+    while (kMax >= kMin) {
         k = (kMax + kMin) / 2;
 
         // Equivalent to SC in line 4 in alg. 5, which stores the components
         // containing different keywords for current trussness
         vector<vector<int>> sc;
-        for (auto &kIndex : kwIndex) {
-            sc.push_back(kIndex.second.at(k));
+        for (int i = 0; i < keywords.size(); ++i) {
+            if (!kwIndex.count(i)) {
+                sc.push_back({});
+            } else {
+                if (!kwIndex.at(i).count(k)) {
+                    sc.push_back({});
+                } else {
+                    sc.push_back(kwIndex.at(i).at(k));
+                }
+            }
         }
 
         lastIntersection = sc[0];
@@ -38,6 +48,7 @@ void DenseTrussSearchTopDownKT::topdownKT() {
                              back_inserter(currIntersection));
 
             if (currIntersection.empty()) {
+                lastIntersection.clear();
                 break;
             }
 
@@ -46,15 +57,14 @@ void DenseTrussSearchTopDownKT::topdownKT() {
         }
 
         if (lastIntersection.empty()) {
-            kMax = k;
+            kMax = k - 1;
         } else {
-            kMin = k;
-            if (kMax == kMin + 1) {
-                break;
-            }
+            kMin = k + 1;
+            id = *min_element(lastIntersection.begin(), lastIntersection.end());
+            result = index->getTrussCC().at(k)[id];
+            finalResult = k;
         }
     }
 
-    id = *min_element(lastIntersection.begin(), lastIntersection.end());
-    result = index->getTrussCC().at(k)[id];
+    endTrussness = finalResult;
 }

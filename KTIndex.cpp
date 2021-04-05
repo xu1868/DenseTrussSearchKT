@@ -27,16 +27,11 @@ void KTIndex::buildKTIndex() {
                     keywordIndex[k][i].push_back(j);
                     keywordMaxTrussN[k] = i;
                 }
-                sort(nodesInCCsContainingKw.begin(),
-                     nodesInCCsContainingKw
-                         .end()); // I have regretted giving such a long name...
-                nodesInCCsContainingKw.erase(
-                    unique(nodesInCCsContainingKw.begin(),
-                           nodesInCCsContainingKw.end()),
-                    nodesInCCsContainingKw.end());
+                nodesInCCsContainingKw.clear();
             }
             nodeNumbers.push_back(nodesInCCsContainingKw);
         }
+
         nodesInCC.push_back(nodeNumbers);
     }
 }

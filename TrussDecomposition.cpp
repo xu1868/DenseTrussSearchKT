@@ -29,7 +29,9 @@ void TrussDecomposition::initTrussness() {
     while (!sortedSupport.empty()) {
         // While still exists edge e that sup(e) <= k - 2
         // Sort in ascending order
-        while (sortedSupport.begin()->first <= k - 2) {
+        // The first condition is to prevent it from entering an endless loop...
+        while (!sortedSupport.empty() &&
+               sortedSupport.begin()->first <= k - 2) {
             EId edge = sortedSupport.begin()->second;
             int sup = sortedSupport.begin()->first;
             // ensure that deg(u) <= deg(v)
@@ -65,6 +67,14 @@ void TrussDecomposition::initTrussness() {
         }
         k += 1;
     }
+    // For nodes not in any edge
+    for (auto beg = graph->BegNI(); beg != graph->EndNI(); beg++) {
+        int nodeId = beg.GetId();
+        if (!nodeTrussness.count(nodeId)) {
+            nodeTrussness[nodeId] = 2;
+        }
+    }
+
     maxTrussness = k - 1;
 }
 
@@ -76,17 +86,19 @@ void TrussDecomposition::initTrussSubgraph() {
     }
 
     for (auto beg = graph->BegEI(); beg != graph->EndEI(); beg++) {
-        EId edge = std::make_pair(beg.GetSrcNId(), beg.GetDstNId());
+        EId edge = minmax_element(beg.GetSrcNId(), beg.GetDstNId());
         int trussness = edgeTrussness[edge];
-        if (!trussSubgraph[trussness]->IsNode(beg.GetSrcNId())) {
-            trussSubgraph[trussness]->AddNode(beg.GetSrcNId());
-        }
-        if (!trussSubgraph[trussness]->IsNode(beg.GetDstNId())) {
-            trussSubgraph[trussness]->AddNode(beg.GetDstNId());
-        }
-        if (!trussSubgraph[trussness]->IsEdge(beg.GetSrcNId(),
-                                              beg.GetDstNId())) {
-            trussSubgraph[trussness]->AddEdge(beg.GetSrcNId(), beg.GetDstNId());
+        auto [u, v] = edge;
+        for (int i = trussness; i >= 0; --i) {
+            if (!trussSubgraph[i]->IsNode(u)) {
+                trussSubgraph[i]->AddNode(u);
+            }
+            if (!trussSubgraph[i]->IsNode(v)) {
+                trussSubgraph[i]->AddNode(v);
+            }
+            if (!trussSubgraph[i]->IsEdge(u, v)) {
+                trussSubgraph[i]->AddEdge(u, v);
+            }
         }
     }
 

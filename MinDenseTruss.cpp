@@ -9,8 +9,9 @@ using namespace std;
 
 MinDenseTruss::MinDenseTruss(PUndirNet graph, TCnCom truss,
                              const std::vector<std::vector<int>> &keywords,
-                             int trussness)
-    : graph(graph), truss(truss), keywords(keywords), trussness(trussness) {
+                             int trussness, const map<EId, int> &edgeTrussness)
+    : graph(graph), truss(truss), keywords(keywords),
+      edgeTrussness(edgeTrussness), trussness(trussness) {
     TIntV gDenNodes = truss.NIdV;
     gDenNodes.Sort();
 
@@ -28,34 +29,36 @@ MinDenseTruss::MinDenseTruss(PUndirNet graph, TCnCom truss,
 TIntV MinDenseTruss::findKTruss(TIntV gdenNodes, const TIntV &toDelete) {
     PUndirNet subgraph = TUndirNet::New();
     for (int i = 0; i < gdenNodes.Len(); ++i) {
-        for (int j = 0; j < gdenNodes.Len(); ++j) {
-            int node1 = gdenNodes[i], node2 = gdenNodes[j];
-            if (graph->IsEdge(node1, node2)) {
-                if (!subgraph->IsNode(node1)) {
-                    subgraph->AddNode(node1);
+        int nodeId = gdenNodes[i];
+        auto node = graph->GetNI(nodeId);
+        if (!subgraph->IsNode(nodeId)) {
+            subgraph->AddNode(nodeId);
+        }
+        for (int j = 0; j < node.GetDeg(); ++j) {
+            auto neighbor = node.GetNbrNId(j);
+            if (edgeTrussness.at(minmax_element(nodeId, neighbor)) ==
+                    trussness &&
+                gdenNodes.Count(neighbor) != 0) {
+                if (!subgraph->IsNode(neighbor)) {
+                    subgraph->AddNode(neighbor);
                 }
-                if (!subgraph->IsNode(node2)) {
-                    subgraph->AddNode(node2);
-                }
-                if (!subgraph->IsEdge(node1, node2)) {
-                    subgraph->AddEdge(node1, node2);
+                if (!subgraph->IsEdge(nodeId, neighbor)) {
+                    subgraph->AddEdge(nodeId, neighbor);
                 }
             }
         }
     }
     /// Equivalent to E_del in line 11, includes all edges to check
     set<EId> edgesToCheck;
-    for (int i = 0; i < gdenNodes.Len(); ++i) {
-        int src = gdenNodes[i];
+    for (int i = 0; i < toDelete.Len(); ++i) {
+        int src = toDelete[i];
         auto node = subgraph->GetNI(src);
         for (int j = 0; j < node.GetDeg(); ++j) {
             int dst = node.GetNbrNId(j);
-            edgesToCheck.insert({src, dst});
+            edgesToCheck.insert(minmax_element(src, dst));
         }
     }
-    // Perform truss decomposition on the subgraph
-    TrussDecomposition *trussDecom = new TrussDecomposition(subgraph);
-    auto edgeSupport = trussDecom->getEdgeSupport();
+
     // Check every edge
     while (!edgesToCheck.empty()) {
         EId currEdge = *edgesToCheck.begin();
@@ -72,10 +75,12 @@ TIntV MinDenseTruss::findKTruss(TIntV gdenNodes, const TIntV &toDelete) {
         for (int i = 0; i < n1.GetDeg(); ++i) {
             int neighbor = n1.GetNbrNId(i);
             if (n2.IsNbrNId(neighbor)) {
-                int sup_vw =
-                    (edgeSupport[minmax_element(node1, neighbor)] -= 1);
-                int sup_uw =
-                    (edgeSupport[minmax_element(node2, neighbor)] -= 1);
+                auto edgeVw = subgraph->GetEI(node1, neighbor);
+                auto edgeUw = subgraph->GetEI(node2, neighbor);
+                int sup_uw = computeSupport(subgraph, edgeUw);
+                int sup_vw = computeSupport(subgraph, edgeVw);
+                sup_uw--;
+                sup_vw--;
                 if (sup_vw < trussness - 2) {
                     edgesToCheck.insert(minmax_element(node1, neighbor));
                 }
@@ -111,14 +116,13 @@ TIntV MinDenseTruss::findKTruss(TIntV gdenNodes, const TIntV &toDelete) {
             return ret;
         }
     }
-    delete trussDecom;
     return ret;
 }
 
 TIntV MinDenseTruss::selectNodesToDel(const TIntV &gdenDiffVis, int setting) {
     TIntV toDelete;
 
-    if (setting | MinDenseTruss::Optimization::BatchDeletion) {
+    if (setting & MinDenseTruss::Optimization::BatchDeletion) {
         if (!isLastSuccessful) {
             deleteSize = 1;
         } else {
@@ -168,18 +172,18 @@ TIntV MinDenseTruss::localExploration() {
 
     // Transfer the Steiner tree to our graph
     auto tree = banks->g;
-    PUndirNet graph = PUndirNet::New();
+    PUndirNet newGraph = PUndirNet::New();
     for (int i = 0; i < tree->n; ++i) {
         for (int j = 0; j < tree->nodes[i].len; ++j) {
             int neighbor = tree->nodes[i].adj[j];
-            if (!graph->IsNode(i)) {
-                graph->AddNode(i);
+            if (!newGraph->IsNode(i)) {
+                newGraph->AddNode(i);
             }
-            if (!graph->IsNode(j)) {
-                graph->AddNode(j);
+            if (!newGraph->IsNode(j)) {
+                newGraph->AddNode(j);
             }
-            if (!graph->IsEdge(i, j)) {
-                graph->AddEdge(i, j);
+            if (!newGraph->IsEdge(i, j)) {
+                newGraph->AddEdge(i, j);
             }
         }
     }
@@ -190,14 +194,14 @@ TIntV MinDenseTruss::localExploration() {
     int threshold = steinerTreeThreshold;
     while (true) {
         // collect adj nodes and their trussness
-        graph->GetNIdV(nodesOfGraph);
+        newGraph->GetNIdV(nodesOfGraph);
         /// {trussness, {adjacent node, original node}}
         priority_queue<pair<int, pair<int, int>>> queue;
-        for (auto beg = graph->BegNI(); beg != graph->EndNI(); beg++) {
+        for (auto beg = newGraph->BegNI(); beg != newGraph->EndNI(); beg++) {
             int nodeId = beg.GetId();
             for (int i = 0; i < beg.GetDeg(); ++i) {
                 int neighborId = beg.GetNbrNId(i);
-                if (!graph->IsNode(neighborId)) {
+                if (!newGraph->IsNode(neighborId)) {
                     queue.push(
                         {nodeTrussness.at(neighborId), {neighborId, nodeId}});
                 }
@@ -206,19 +210,19 @@ TIntV MinDenseTruss::localExploration() {
         // add adj nodes
         // note that nodes in the queue can be duplicate... and I plan to do
         // nothing about it
-        while (graph->GetNodes() < min(threshold, truss.Len())) {
+        while (newGraph->GetNodes() < min(threshold, truss.Len())) {
             auto edge = queue.top().second;
             auto added = edge.first, src = edge.second;
             queue.pop();
-            if (!graph->IsNode(added)) {
-                graph->AddNode(added);
+            if (!newGraph->IsNode(added)) {
+                newGraph->AddNode(added);
             }
-            if (!graph->IsEdge(src, added)) {
-                graph->AddEdge(src, added);
+            if (!newGraph->IsEdge(src, added)) {
+                newGraph->AddEdge(src, added);
             }
         }
         // find truss inside
-        TrussDecomposition tDecom(graph);
+        TrussDecomposition tDecom(newGraph);
         if (tDecom.getMaxTrussness() < trussness) {
             threshold += steinerTreeThreshold;
             continue;
@@ -230,7 +234,7 @@ TIntV MinDenseTruss::localExploration() {
             vector<int> nodesVec;
             bool ok = true;
             for (int j = 0; j < nodesV.Len(); ++j) {
-                nodesVec.push_back(nodesV[i]);
+                nodesVec.push_back(nodesV[j]);
             }
             for (int j = 0; j < keywords.size(); ++j) {
                 vector<int> tmp;
@@ -260,7 +264,7 @@ TIntV MinDenseTruss::localExploration() {
 }
 
 TIntV MinDenseTruss::findMinDenseTruss(int setting) {
-    if (setting | Optimization::LocalExploration) {
+    if (setting & Optimization::LocalExploration) {
         return localExploration();
     }
 
@@ -270,7 +274,7 @@ TIntV MinDenseTruss::findMinDenseTruss(int setting) {
     TIntV toDelete;
     int unsuccessfulDeletionCount = 0;
 
-    while (!gdenDiffVis.Empty()) {
+    while (gdenDiffVis.Len() != 0) {
         toDelete = selectNodesToDel(gdenDiffVis, setting);
 
         TIntV afterDelete = findKTruss(gdenNodes, toDelete);
@@ -280,7 +284,7 @@ TIntV MinDenseTruss::findMinDenseTruss(int setting) {
             isLastSuccessful = true;
         } else {
             isLastSuccessful = false;
-            if ((setting | Optimization::EarlyStopDeletion) &&
+            if ((setting & Optimization::EarlyStopDeletion) &&
                 ++unsuccessfulDeletionCount > earlyStopThreshold) {
                 break;
             }
@@ -288,7 +292,26 @@ TIntV MinDenseTruss::findMinDenseTruss(int setting) {
 
         visited.AddVMerged(toDelete);
         gdenDiffVis = gdenNodes;
-        gdenDiffVis.Diff(afterDelete);
+        gdenDiffVis.Sort();
+        gdenDiffVis.Diff(visited);
+
+        // cout << "gdenDIffVis:" << endl;
+        // for (int i = 0; i < gdenDiffVis.Len(); ++i) {
+        //     cout << gdenDiffVis[i] << " ";
+        // }
+        // cout << endl;
+
+        // cout << "gdenNodes:" << endl;
+        // for (int i = 0; i < gdenNodes.Len(); ++i) {
+        //     cout << gdenNodes[i] << " ";
+        // }
+        // cout << endl;
+
+        // cout << "visited:" << endl;
+        // for (int i = 0; i < visited.Len(); ++i) {
+        //     cout << visited[i] << " ";
+        // }
+        // cout << endl;
     }
 
     return gdenNodes;

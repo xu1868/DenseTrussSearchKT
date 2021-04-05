@@ -33,9 +33,10 @@ void DenseTrussSearchTopDown::topdown() {
     PUndirNet kMaxTruss = TUndirNet::New();
 
     while (result.Empty()) {
+        // construct subgraph for kMax-truss
         for (auto beg = graph->BegEI(); beg != graph->EndEI(); beg++) {
             auto [u, v] = make_pair(beg.GetSrcNId(), beg.GetDstNId());
-            if (edgeTrussness.at({u, v}) >= kMax) {
+            if (edgeTrussness.at(minmax_element(u, v)) >= kMax) {
                 if (!kMaxTruss->IsNode(u)) {
                     kMaxTruss->AddNode(u);
                 }
@@ -49,27 +50,34 @@ void DenseTrussSearchTopDown::topdown() {
         }
 
         TCnComV cntrussSubgraph;
-        TSnap::GetWccs(graph, cntrussSubgraph);
+        TSnap::GetWccs(kMaxTruss, cntrussSubgraph);
         for (int i = 0; i < cntrussSubgraph.Len(); ++i) {
             TCnCom cnCom = cntrussSubgraph[i];
-            vector<int> computed(keywords.size(), 0);
-            int tag = 0;
-            for (int j = 0; j < cnCom.Len(); ++j) {
-                int node = cnCom[j];
-                for (int k = 0; k < keywords.size(); ++k) {
-                    if (find(keywords[k].begin(), keywords[k].end(), node) !=
-                        keywords[k].end()) {
-                        computed[k] = 0;
-                    }
+            set<int> nodes;
+            bool ok = true;
+            for (int i = 0; i < cnCom.Len(); ++i) {
+                nodes.insert(cnCom[i]);
+            }
+            for (int i = 0; i < keywords.size(); ++i) {
+                vector<int> tmp;
+                set_intersection(nodes.begin(), nodes.end(),
+                                 keywords[i].begin(), keywords[i].end(),
+                                 back_inserter(tmp));
+                if (tmp.empty()) {
+                    ok = false;
+                    break;
                 }
-                tag = accumulate(computed.begin(), computed.end(), 0);
-                if (tag == keywords.size()) {
-                    if (result.Empty() || result.Len() >= cnCom.Len()) {
-                        result = cnCom;
-                    }
+            }
+            if (ok) {
+                if (result.Empty() || result.Len() > cnCom.Len()) {
+                    result = cnCom;
                 }
             }
         }
-        kMax--;
+        if (--kMax < 2) {
+            break;
+        }
     }
+
+    endTrussness = kMax + 1;
 }

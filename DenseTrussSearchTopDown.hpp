@@ -27,7 +27,8 @@ class DenseTrussSearchTopDown {
      *
      * @param graph
      * @param keywords a keyword vector that satisfies keywords[keyword number]
-     * = a vector of node numbers
+     * = a vector of node numbers.
+     * CAUTION: `keywords` **MUST** be SORTED!!!
      */
     DenseTrussSearchTopDown(PUndirNet graph,
                             const std::vector<std::vector<int>> &keywords)
@@ -45,6 +46,7 @@ class DenseTrussSearchTopDown {
     ~DenseTrussSearchTopDown();
 
     const TCnCom &getResult() { return result; }
+    int getTrussness() const { return endTrussness; }
 
   private:
     const PUndirNet graph;
@@ -53,6 +55,7 @@ class DenseTrussSearchTopDown {
 
     TrussDecomposition *trussDecom = nullptr;
     int maxTrussness = 0;
+    int endTrussness = 0;
     const std::map<EId, int> &edgeSupport;
     const std::set<std::pair<int, EId>> &sortedEdgeSupport;
     const std::map<VId, int> &nodeTrussness;
