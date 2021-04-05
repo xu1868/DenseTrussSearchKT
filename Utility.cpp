@@ -1,4 +1,5 @@
 #include "Utility.hpp"
+#include <iostream>
 
 using namespace std;
 
@@ -29,4 +30,16 @@ FILE *openFile(const char *file_name, const char *mode) {
     }
 
     return fin;
+}
+
+void outputGraph(PUndirNet graph) {
+    cout << "===============================" << endl;
+    for (auto beg = graph->BegNI(); beg != graph->EndNI(); beg++) {
+        for (int i = 0; i < beg.GetDeg(); ++i) {
+            int neighborId = beg.GetNbrNId(i);
+            cout << "(" << beg.GetId() << ", " << neighborId << ") ";
+        }
+        cout << endl;
+    }
+    cout << "===============================" << endl;
 }

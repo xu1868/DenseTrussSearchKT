@@ -61,3 +61,5 @@ inline std::pair<int, int> minmax_element(int ele1, int ele2) {
     return ele1 < ele2 ? std::make_pair(ele1, ele2)
                        : std::make_pair(ele2, ele1);
 }
+
+void outputGraph(PUndirNet graph);

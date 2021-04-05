@@ -235,8 +235,7 @@ int testTrussSearchKT(PUndirNet graph, const vector<vector<int>> &keywords) {
     MinDenseTruss minDense =
         MinDenseTruss(graph, cnCom, keywords, trussness, edgeTrussness);
 
-    auto minDenseRet = minDense.findMinDenseTruss(
-        MinDenseTruss::EarlyStopDeletion | MinDenseTruss::BatchDeletion);
+    auto minDenseRet = minDense.findMinDenseTruss(MinDenseTruss::BatchDeletion);
     cout << "======MinDenseTruss: " << minDenseRet.Len() << " nodes." << endl;
 
     // check if contains all keywords
@@ -259,8 +258,29 @@ int testTrussSearchKT(PUndirNet graph, const vector<vector<int>> &keywords) {
     }
 
     // finally check LocalSearch
-    // auto minDenseRet2 =
-    //     minDense.findMinDenseTruss(MinDenseTruss::LocalExploration);
+    cout << "===Checking local search optimization..." << endl;
+    auto minDenseRet2 =
+        minDense.findMinDenseTruss(MinDenseTruss::LocalExploration);
+    cout << "======MinDenseTruss-LocalExploration: " << minDenseRet2.Len()
+         << " nodes." << endl;
+    // check if contains all keywords
+    vector<int> nodes3;
+    for (int i = 0; i < minDenseRet2.Len(); ++i) {
+        nodes3.push_back(minDenseRet2[i]);
+    }
+    sort(nodes3.begin(), nodes3.end());
+    for (int i = 0; i < keywords.size(); ++i) {
+        vector<int> tmp;
+        vector<int> kwds = keywords[i];
+        sort(kwds.begin(), kwds.end());
+        set_intersection(nodes3.begin(), nodes3.end(), kwds.begin(), kwds.end(),
+                         back_inserter(tmp));
+        if (tmp.empty()) {
+            cout << "!!!ERROR! not containing keyword " << i << ". EXITING..."
+                 << endl;
+            return -1;
+        }
+    }
     return 0;
 }
 
@@ -291,11 +311,18 @@ int main() {
     cout << "Start testing..." << endl;
 
     PUndirNet graph1 = genRandomNetwork(10, 15);
-    PUndirNet graph2 = genRandomNetwork(100, 200);
-    PUndirNet graph3 = genRandomNetwork(1000, 20000);
+    PUndirNet graph2 = genRandomNetwork(100, 1000);
+    PUndirNet graph3 = genRandomNetwork(900, 9000);
+    TCnComV ccs;
+    TSnap::GetWccs(graph1, ccs);
+    cout << "CCs of graph1: " << ccs.Len() << endl;
+    TSnap::GetWccs(graph2, ccs);
+    cout << "CCs of graph2: " << ccs.Len() << endl;
+    TSnap::GetWccs(graph3, ccs);
+    cout << "CCs of graph3: " << ccs.Len() << endl;
     auto kw1 = genRandomKeywords(graph1, 3);
     auto kw2 = genRandomKeywords(graph2, 3);
-    auto kw3 = genRandomKeywords(graph1, 3);
+    auto kw3 = genRandomKeywords(graph3, 3);
 
     if (test(graph1, kw1, "Graph 1") == -1) {
         return -1;

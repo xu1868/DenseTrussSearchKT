@@ -1,7 +1,8 @@
 #include "MinDenseTruss.hpp"
+#include "BanksAlgorithm.hpp"
 #include "TrussDecomposition.hpp"
 #include "Utility.hpp"
-#include "lib/local_search.h"
+#include <iostream>
 #include <queue>
 #include <set>
 
@@ -22,7 +23,6 @@ MinDenseTruss::MinDenseTruss(PUndirNet graph, TCnCom truss,
         }
         keywordV.Sort();
         keywordV.Intrs(gDenNodes);
-        QInComV.push_back(keywordV);
     }
 }
 
@@ -167,70 +167,75 @@ TIntV MinDenseTruss::localExploration() {
     auto &nodeTrussness = trussDecom->getNodeTrussness();
 
     // Run BANKS algorithm to get Steiner tree
-    BanksAlgorithm *banks = new BanksAlgorithm();
-    banks->run(subgraph, QInComV, BASIC_STEINER_TREE, true);
+    BanksAlgorithm *banks = new BanksAlgorithm(subgraph, keywords);
+    PUndirNet newGraph = banks->getAnswer();
 
-    // Transfer the Steiner tree to our graph
-    auto tree = banks->g;
-    PUndirNet newGraph = PUndirNet::New();
-    for (int i = 0; i < tree->n; ++i) {
-        for (int j = 0; j < tree->nodes[i].len; ++j) {
-            int neighbor = tree->nodes[i].adj[j];
-            if (!newGraph->IsNode(i)) {
-                newGraph->AddNode(i);
-            }
-            if (!newGraph->IsNode(j)) {
-                newGraph->AddNode(j);
-            }
-            if (!newGraph->IsEdge(i, j)) {
-                newGraph->AddEdge(i, j);
-            }
-        }
+    if (newGraph->GetNodes() == 0) {
+        cout << "***For some reason, BANKS algorithm failed." << endl;
+        TIntV result;
+        graph->GetNIdV(result);
+        return result;
     }
 
     // Incrementally add vertices
     TIntV nodesOfGraph;
     int addedNodes = 0;
     int threshold = steinerTreeThreshold;
-    while (true) {
+    bool lastChanged = true;
+    while (lastChanged) {
+        lastChanged = false;
         // collect adj nodes and their trussness
         newGraph->GetNIdV(nodesOfGraph);
         /// {trussness, {adjacent node, original node}}
         priority_queue<pair<int, pair<int, int>>> queue;
         for (auto beg = newGraph->BegNI(); beg != newGraph->EndNI(); beg++) {
             int nodeId = beg.GetId();
-            for (int i = 0; i < beg.GetDeg(); ++i) {
-                int neighborId = beg.GetNbrNId(i);
+            auto newBeg = graph->GetNI(nodeId);
+            for (int i = 0; i < newBeg.GetDeg(); ++i) {
+                int neighborId = newBeg.GetNbrNId(i);
                 if (!newGraph->IsNode(neighborId)) {
+                    if (nodeTrussness.find(neighborId) == nodeTrussness.end()) {
+                        continue;
+                    }
                     queue.push(
-                        {nodeTrussness.at(neighborId), {neighborId, nodeId}});
+                        {edgeTrussness.at(minmax_element(neighborId, nodeId)),
+                         {neighborId, nodeId}});
+                } else {
+                    if (!newGraph->IsEdge(neighborId, nodeId)) {
+                        lastChanged = true;
+                        newGraph->AddEdge(neighborId, nodeId);
+                    }
                 }
             }
         }
         // add adj nodes
         // note that nodes in the queue can be duplicate... and I plan to do
         // nothing about it
-        while (newGraph->GetNodes() < min(threshold, truss.Len())) {
+        while (!queue.empty() &&
+               newGraph->GetNodes() < min(threshold, graph->GetNodes())) {
             auto edge = queue.top().second;
             auto added = edge.first, src = edge.second;
             queue.pop();
             if (!newGraph->IsNode(added)) {
+                lastChanged = true;
                 newGraph->AddNode(added);
             }
             if (!newGraph->IsEdge(src, added)) {
+                lastChanged = true;
                 newGraph->AddEdge(src, added);
             }
         }
         // find truss inside
         TrussDecomposition tDecom(newGraph);
-        if (tDecom.getMaxTrussness() < trussness) {
+        if (tDecom.getMaxTrussness() < trussness && lastChanged) {
             threshold += steinerTreeThreshold;
             continue;
         }
         const vector<TCnComV> &CCs = tDecom.getTrussCC();
+        TIntV nodesV;
         // for every connected component, check if containing all keywords
         for (int i = 0; i < CCs[trussness].Len(); ++i) {
-            TIntV nodesV = CCs[trussness][i].NIdV;
+            nodesV = CCs[trussness][i].NIdV;
             vector<int> nodesVec;
             bool ok = true;
             for (int j = 0; j < nodesV.Len(); ++j) {
@@ -238,6 +243,7 @@ TIntV MinDenseTruss::localExploration() {
             }
             for (int j = 0; j < keywords.size(); ++j) {
                 vector<int> tmp;
+                sort(nodesVec.begin(), nodesVec.end());
                 set_intersection(nodesVec.begin(), nodesVec.end(),
                                  keywords[j].begin(), keywords[j].end(),
                                  back_inserter(tmp));
@@ -250,17 +256,20 @@ TIntV MinDenseTruss::localExploration() {
                 delete trussDecom;
                 delete banks;
                 return nodesV;
+            } else {
+                threshold += steinerTreeThreshold;
             }
-        }
-
-        if (graph->GetNodes() == truss.Len()) {
-            break;
         }
     }
 
     delete trussDecom;
     delete banks;
-    return TIntV();
+    cout << "***For some reason, BANKS algorithm failed. No valid result "
+            "returned."
+         << endl;
+    TIntV result;
+    graph->GetNIdV(result);
+    return result;
 }
 
 TIntV MinDenseTruss::findMinDenseTruss(int setting) {
@@ -294,24 +303,6 @@ TIntV MinDenseTruss::findMinDenseTruss(int setting) {
         gdenDiffVis = gdenNodes;
         gdenDiffVis.Sort();
         gdenDiffVis.Diff(visited);
-
-        // cout << "gdenDIffVis:" << endl;
-        // for (int i = 0; i < gdenDiffVis.Len(); ++i) {
-        //     cout << gdenDiffVis[i] << " ";
-        // }
-        // cout << endl;
-
-        // cout << "gdenNodes:" << endl;
-        // for (int i = 0; i < gdenNodes.Len(); ++i) {
-        //     cout << gdenNodes[i] << " ";
-        // }
-        // cout << endl;
-
-        // cout << "visited:" << endl;
-        // for (int i = 0; i < visited.Len(); ++i) {
-        //     cout << visited[i] << " ";
-        // }
-        // cout << endl;
     }
 
     return gdenNodes;

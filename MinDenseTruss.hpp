@@ -65,9 +65,6 @@ class MinDenseTruss {
     TCnCom truss;
     const std::vector<std::vector<int>> &keywords;
     const std::map<EId, int> &edgeTrussness;
-    /// In order to cater to BanksAlgorithm which asks for vector<TIntV>.
-    /// Containing keywords.
-    std::vector<TIntV> QInComV;
     int trussness;
     /// Auxiliary variable for `selectNodesToDel`
     int deleteSize = 1;
@@ -80,7 +77,6 @@ class MinDenseTruss {
     /// Number made by guessing
     int steinerTreeThreshold =
         std::min((int)keywords.size() * 3, truss.Len() - 1);
-    const int BASIC_STEINER_TREE = 0;
 
     /**
      * @brief A helper function for alg. 6.

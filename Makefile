@@ -7,7 +7,7 @@ INC_PARAMS = $(foreach d, $(INC), -I$d)
 
 all: main
 
-main: main.cpp DenseTrussSearchTopDown.o DenseTrussSearchTopDownKT.o KTIndex.o MinDenseTruss.o TrussDecomposition.o Utility.o lib/local_search.o
+main: main.cpp DenseTrussSearchTopDown.o DenseTrussSearchTopDownKT.o KTIndex.o MinDenseTruss.o TrussDecomposition.o Utility.o BanksAlgorithm.o
 	$(CC) $(CXXFLAGS) -o $@ $^ $(INC_PARAMS) $(LIBS)
 
 DenseTrussSearchTopDown.o: DenseTrussSearchTopDown.cpp
@@ -28,8 +28,8 @@ TrussDecomposition.o: TrussDecomposition.cpp
 Utility.o: Utility.cpp
 	$(CC) -c $(CXXFLAGS) -o $@ $< $(INC_PARAMS)
 
-lib/local_search.o:
-	$(MAKE) -C lib all
+BanksAlgorithm.o: BanksAlgorithm.cpp
+	$(CC) -c $(CXXFLAGS) -o $@ $< $(INC_PARAMS)
 
 clean:
-	-rm main *.o ./lib/*.o
+	-rm main *.o
